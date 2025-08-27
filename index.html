@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Pi Vision Arm Control</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f0f0f0;
+            margin-top: 50px;
+        }
+        #video_container {
+            margin: 20px auto;
+            border: 2px solid #333;
+            width: fit-content;
+        }
+        img {
+            display: block;
+            max-width: 100%;
+            height: auto;
+        }
+        #status {
+            margin-top: 20px;
+            font-size: 1.2em;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <h1>Live Vision for Robotic Arm Control</h1>
+    <div id="video_container">
+        <img src="{{ url_for('video_feed') }}" alt="Live Video Feed">
+    </div>
+    <div id="perf_stats" style="margin-top:20px; font-size:1.1em;">
+        <b>Performance:</b>
+        <span id="fps">FPS: ...</span> |
+        <span id="cpu">CPU: ...</span> |
+        <span id="cpu_temp">CPU Temp: ...</span> |
+        <span id="lock_status">Lock Status: ...</span>
+    </div>
+    
+    <div id="servo_status" style="margin-top:20px; font-size:1.1em;">
+        <b>Servo Status:</b>
+        <span id="current_mode">Mode: ...</span> |
+        <span id="arm_angles">Arm: ...</span> |
+        <span id="car_status">Steering: ...</span>
+    </div>
+    
+    <div id="controls" style="margin-top:20px;">
+        <button id="calibrate_btn" onclick="calibrateServos()" style="padding:10px 20px; font-size:1.1em; background-color:#28a745; color:white; border:none; border-radius:5px; cursor:pointer; margin-left:10px;">
+            Calibrate Servos
+        </button>
+    </div>
+
+<script>
+function updateStats() {
+    fetch('/stats')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('fps').textContent = 'FPS: ' + data.fps.toFixed(1);
+            document.getElementById('cpu').textContent = 'CPU: ' + data.cpu.toFixed(1) + '%';
+            document.getElementById('cpu_temp').textContent = 'CPU Temp: ' + data.cpu_temp.toFixed(1) + '°C';
+            document.getElementById('lock_status').textContent = 'Lock Status: ' + data.lock_status;
+        });
+}
+
+function calibrateServos() {
+    const btn = document.getElementById('calibrate_btn');
+    btn.disabled = true;
+    btn.textContent = 'Calibrating...';
+    
+    fetch('/calibrate')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                showMessage(data.message, 'success');
+            } else {
+                showMessage('Error: ' + data.message, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error calibrating:', error);
+            showMessage('Error calibrating servos', 'error');
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.textContent = 'Calibrate Servos';
+        });
+}
+
+function showMessage(message, type) {
+    // Create or update message element
+    let msgElement = document.getElementById('message');
+    if (!msgElement) {
+        msgElement = document.createElement('div');
+        msgElement.id = 'message';
+        msgElement.style.cssText = 'position:fixed; top:20px; right:20px; padding:15px; border-radius:5px; color:white; font-weight:bold; z-index:1000;';
+        document.body.appendChild(msgElement);
+    }
+    
+    msgElement.textContent = message;
+    msgElement.style.backgroundColor = type === 'success' ? '#28a745' : '#dc3545';
+    
+    // Auto-hide after 3 seconds
+    setTimeout(() => {
+        msgElement.style.display = 'none';
+    }, 3000);
+}
+
+// Update stats every second
+setInterval(updateStats, 1000);
+// Update servo status every 1000ms for better performance
+setInterval(updateServoStatus, 1000);
+
+// Initialize on page load
+updateStats();
+updateServoStatus();
+</script>
+</body>
+</html>
+
