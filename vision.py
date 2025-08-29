@@ -454,8 +454,8 @@ def create_debug_visualization(frame):
         debug_frame = np.vstack([frame, final_mask_bgr])
         
         # ADD SIMPLE LABELS
-        cv2.putText(debug_frame, "ORIGINAL", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
-        cv2.putText(debug_frame, "FINAL MASK", (10, frame.shape[0] + 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+        cv2.putText(debug_frame, "ORIGINAL", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 255, 0), 2)
+        cv2.putText(debug_frame, "FINAL MASK", (10, frame.shape[0] + 30), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 255, 0), 2)
         
         return debug_frame
         
@@ -616,14 +616,9 @@ def process_frames(frame_width, frame_height):
                             print("SWITCHING TO RETRIEVE MODE")
                             reset_tracking()
                         else:
-                            servo_controller.steer(rel_x)
-                            servo_controller.move_arm(0.0, 0.0, 0.01)  # KEEP ARM STABLE
-                    else:
-                        # OBJECT NOT FOUND - USE LAST KNOWN POSITION
-                        rel_x = (lock_on_object['center_x'] - frame_width/2) / (frame_width/2)
-                        rel_x = max(-1.0, min(1.0, rel_x))
-                        servo_controller.steer(rel_x)
-                        servo_controller.move_arm(0.0, 0.0, 0.01)  # KEEP ARM STABLE
+                            if similarity > 0.8:
+                                servo_controller.steer(rel_x)
+                    servo_controller.move_arm(0.0, 0.0, 0.01)  # KEEP ARM STABLE
 
                 if now - lock_on_last_seen > LOCK_ON_TIMEOUT/4:
                     lock_on_template = None

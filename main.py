@@ -1,9 +1,23 @@
+from adafruit_servokit import ServoKit
+
+def startup():
+    kit = ServoKit(channels=16)
+
+    # startup
+    input("Power disconnected?")
+    kit.servo[4].angle = 90 
+    print("Starting up motor...")
+    input("Power connected?")
+    
+startup()
+
 from flask import Flask, Response, render_template, jsonify
 import threading
-import time
 import sys
 import vision
 from servo import servo_controller
+import logging
+import time
 
 app = Flask(__name__)
 frame_width = 480
@@ -11,15 +25,16 @@ frame_height = 320
 ready = False
 feed_lock = threading.Lock()
 
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.ERROR)
+
 def run():
     global frame_width, frame_height
-    count=0
     while True:
         if ready:
-            count+=1
             servo_controller.update()
             time.sleep(0.05)
-        
+                    
 @app.route('/')
 def index():
     """Video streaming home page."""
@@ -59,6 +74,23 @@ def calibrate():
 def stats():
     import vision
     return jsonify(vision.get_stats())
+
+@app.route('/start_browser')
+def start_browser():
+    import server
+    server.launch_browser()
+    return jsonify({"status": "success", "message": "Browser launched"})
+
+@app.route('/stop_browser')
+def stop_browser():
+    import server
+    server.close_browser()
+    return jsonify({"status": "success", "message": "Browser closed"})
+
+@app.route('/motor_stop')
+def motor_stop():
+    servo_controller.stop_motor()
+    return jsonify({"status": "success", "message": "Motor stopped"})
 
 if __name__ == '__main__':
     arm_thread = threading.Thread(target=run, daemon=True)

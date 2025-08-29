@@ -59,6 +59,17 @@
         <button id="calibrate_btn" onclick="calibrateServos()" style="padding:10px 20px; font-size:1.1em; background-color:#28a745; color:white; border:none; border-radius:5px; cursor:pointer; margin-left:10px;">
             Calibrate Servos
         </button>
+        <!-- <button id="start_browser_btn" onclick="startBrowser()" style="padding:10px 20px; font-size:1.1em; background-color:#007bff; color:white; border:none; border-radius:5px; cursor:pointer; margin-left:10px;"> -->
+        <button id="start_browser_btn" onclick="startBrowser()" style="display: none;">
+            Start Browser
+        </button>
+        <!-- <button id="stop_browser_btn" onclick="stopBrowser()" style="padding:10px 20px; font-size:1.1em; background-color:#dc3545; color:white; border:none; border-radius:5px; cursor:pointer; margin-left:10px;"> -->
+        <button id="stop_browser_btn" onclick="startBrowser()" style="display: none;">
+            Stop Browser
+        </button>
+        <button id="motor_stop_btn" onclick="motorStop()" style="padding:10px 20px; font-size:1.1em; background-color:#ffc107; color:white; border:none; border-radius:5px; cursor:pointer; margin-left:10px;">
+            Stop Motor
+        </button>
     </div>
 
 <script>
@@ -69,6 +80,30 @@ function updateStats() {
             document.getElementById('fps').textContent = 'FPS: ' + data.fps.toFixed(1);
             document.getElementById('cpu').textContent = 'CPU: ' + data.cpu.toFixed(1) + '%';
             document.getElementById('cpu_temp').textContent = 'CPU Temp: ' + data.cpu_temp.toFixed(1) + '°C';
+        });
+}
+
+function motorStop() {
+    const btn = document.getElementById('motor_stop_btn');
+    btn.disabled = true;
+    btn.textContent = 'Stopping motor...';
+    
+    fetch('/motor_stop')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                showMessage(data.message, 'success');
+            } else {
+                showMessage('Error: ' + data.message, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error stopping motor:', error);
+            showMessage('Error stopping motor', 'error');
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.textContent = 'Stop Motor';
         });
 }
 
@@ -93,6 +128,54 @@ function calibrateServos() {
         .finally(() => {
             btn.disabled = false;
             btn.textContent = 'Calibrate Servos';
+        });
+}
+
+function startBrowser() {
+    const btn = document.getElementById('start_browser_btn');
+    btn.disabled = true;
+    btn.textContent = 'Starting browser...';
+    
+    fetch('/start_browser')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                showMessage(data.message, 'success');
+            } else {
+                showMessage('Error: ' + data.message, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error starting browser:', error);
+            showMessage('Error starting browser', 'error');
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.textContent = 'Start Browser';
+        });
+}
+
+function stopBrowser() {
+    const btn = document.getElementById('stop_browser_btn');
+    btn.disabled = true;
+    btn.textContent = 'Stopping browser...';
+    
+    fetch('/stop_browser')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                showMessage(data.message, 'success');
+            } else {
+                showMessage('Error: ' + data.message, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error stopping browser:', error);
+            showMessage('Error stopping browser', 'error');
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.textContent = 'Stop Browser';
         });
 }
 
