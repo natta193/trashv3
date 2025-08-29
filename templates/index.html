@@ -14,10 +14,18 @@
             border: 2px solid #333;
             width: fit-content;
         }
-        img {
+        .video_feed {
             display: block;
             max-width: 100%;
             height: auto;
+        }
+        .debug_feed {
+            display: block;
+            max-width: 100%;
+            height: auto;
+            /* Make debug view larger */
+            min-width: 400px;
+            min-height: 300px;
         }
         #status {
             margin-top: 20px;
@@ -29,21 +37,22 @@
 <body>
     <h1>Live Vision for Robotic Arm Control</h1>
     <div id="video_container">
-        <img src="{{ url_for('video_feed') }}" alt="Live Video Feed">
+        <div style="display: flex; justify-content: center; gap: 20px; margin: 20px 0;">
+            <div style="text-align: center;">
+                <h3>Normal View</h3>
+                <img src="{{ url_for('video_feed') }}" alt="Live Video Feed" class="video_feed" style="border: 2px solid #333;">
+            </div>
+            <div style="text-align: center;">
+                <h3>AI Debug View</h3>
+                <img src="{{ url_for('debug_feed') }}" alt="Debug Video Feed" class="debug_feed" style="border: 2px solid #333;">
+            </div>
+        </div>
     </div>
     <div id="perf_stats" style="margin-top:20px; font-size:1.1em;">
         <b>Performance:</b>
         <span id="fps">FPS: ...</span> |
         <span id="cpu">CPU: ...</span> |
         <span id="cpu_temp">CPU Temp: ...</span> |
-        <span id="lock_status">Lock Status: ...</span>
-    </div>
-    
-    <div id="servo_status" style="margin-top:20px; font-size:1.1em;">
-        <b>Servo Status:</b>
-        <span id="current_mode">Mode: ...</span> |
-        <span id="arm_angles">Arm: ...</span> |
-        <span id="car_status">Steering: ...</span>
     </div>
     
     <div id="controls" style="margin-top:20px;">
@@ -60,7 +69,6 @@ function updateStats() {
             document.getElementById('fps').textContent = 'FPS: ' + data.fps.toFixed(1);
             document.getElementById('cpu').textContent = 'CPU: ' + data.cpu.toFixed(1) + '%';
             document.getElementById('cpu_temp').textContent = 'CPU Temp: ' + data.cpu_temp.toFixed(1) + '°C';
-            document.getElementById('lock_status').textContent = 'Lock Status: ' + data.lock_status;
         });
 }
 
@@ -109,12 +117,9 @@ function showMessage(message, type) {
 
 // Update stats every second
 setInterval(updateStats, 1000);
-// Update servo status every 1000ms for better performance
-setInterval(updateServoStatus, 1000);
 
 // Initialize on page load
 updateStats();
-updateServoStatus();
 </script>
 </body>
 </html>

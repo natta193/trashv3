@@ -37,6 +37,15 @@ def video_feed():
     return Response(vision.process_frames(frame_width, frame_height),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
+@app.route('/debug_feed')
+def debug_feed():
+    """Debug video streaming route. Shows what the AI is actually seeing."""
+    with feed_lock:
+        global ready
+        ready = True
+    return Response(vision.process_debug_frames(frame_width, frame_height),
+                    mimetype='multipart/x-mixed-replace; boundary=frame')
+
 @app.route('/calibrate')
 def calibrate():
     """Endpoint to trigger servo calibration."""
@@ -50,3 +59,9 @@ def calibrate():
 def stats():
     import vision
     return jsonify(vision.get_stats())
+
+if __name__ == '__main__':
+    arm_thread = threading.Thread(target=run, daemon=True)
+    arm_thread.start()
+
+    app.run(host='0.0.0.0', port=5000, debug=False, threaded=True)

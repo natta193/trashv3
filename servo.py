@@ -32,7 +32,7 @@ class ServoController:
     def update(self):
         for i, angle in enumerate(self.target_angles):
             self.current_angles[i] += max(-5, min(angle - self.current_angles[i], 5))
-            self.arm_servos[i].angle = self.arm_angles[i]
+            self.arm_servos[i].angle = self.current_angles[i]
     
     def calibrate(self):
         for i in range (90, 180, 3):
@@ -60,9 +60,11 @@ class ServoController:
             self.motor.angle = 0
             
     def move_arm(self, rel_x, rel_y, area):
+        # print("move arm", rel_x, rel_y, area)
         pass # i will code this myself
     
     def steer(self, rel_x):
-        pass # i will code this myself
+        # print("steer", rel_x)
+        self.steering_angle = self.steering_range[1] + rel_x * (self.steering_range[2] - self.steering_range[0]) / 2
 
 servo_controller = ServoController()
