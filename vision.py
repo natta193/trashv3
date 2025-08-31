@@ -468,7 +468,7 @@ def process_frames(frame_width, frame_height):
     OPTIMIZED FRAME PROCESSING FUNCTION WITH PERFORMANCE IMPROVEMENTS.
     USES detect_objects ONLY WHEN SEARCHING, THEN SWITCHES TO LIGHTWEIGHT IMAGE MATCHING.
     """
-    global lock_on_object, lock_on_start_time, lock_on_last_seen, locked_object_template, locked_object_bbox, template_last_update
+    global lock_on_object, lock_on_start_time, lock_on_last_seen, locked_object_template, locked_object_bbox, template_last_update, retrieve
     
     # TRACK CANDIDATE OBJECT FOR LOCK-ON
     candidate_for_lock = None
@@ -546,11 +546,7 @@ def process_frames(frame_width, frame_height):
                     lock_on_start_time = None
                 
                 # NO LOCKED OBJECT - STEER STRAIGHT
-                servo_controller.steer(0.0)
-                
-                # ALSO CALL MOVE_ARM WITH NEUTRAL POSITION TO KEEP ARM STABLE
-                servo_controller.move_arm(0.0, 0.0, 0.01)
-                
+                servo_controller.steer(0.0)                
             else:
                 # LOCKED ON - USE LIGHTWEIGHT IMAGE MATCHING
                 if locked_object_template is not None:
@@ -618,7 +614,6 @@ def process_frames(frame_width, frame_height):
                         else:
                             if similarity > 0.8:
                                 servo_controller.steer(rel_x)
-                    servo_controller.move_arm(0.0, 0.0, 0.01)  # KEEP ARM STABLE
 
                 if now - lock_on_last_seen > LOCK_ON_TIMEOUT/4:
                     lock_on_template = None
@@ -673,27 +668,17 @@ def process_frames(frame_width, frame_height):
                     # CALCULATE RELATIVE POSITIONS AND AREA FOR ARM CONTROL
                     rel_x = (matched_pos[0] - frame_width/2) / (frame_width/2)
                     rel_y = (matched_pos[1] - frame_height/2) / (frame_height/2)
-                    
-                    # SAFETY CHECK FOR AREA CALCULATION
-                    if locked_object_bbox is not None:
-                        w = locked_object_bbox[2] - locked_object_bbox[0]
-                        h = locked_object_bbox[3] - locked_object_bbox[1]
-                        area_ratio = (w * h) / (frame_width * frame_height)
-                    else:
-                        # FALLBACK AREA RATIO
-                        area_ratio = 0.01  # SMALL DEFAULT VALUE
-                        print("WARNING: Using fallback area ratio due to missing bbox")
-                    
+                                        
                     rel_x = max(-1.0, min(1.0, rel_x))
                     rel_y = max(-1.0, min(1.0, rel_y))
                     
-                    servo_controller.move_arm(rel_x, rel_y, area_ratio)
+                    servo_controller.move_arm(rel_x, rel_y)
                     
                 if similarity < 0.8:    
                     # OBJECT NOT FOUND - CHECK TIMEOUT
                     if lock_on_last_seen is None:
                         lock_on_last_seen = now
-                    elif now - lock_on_last_seen > LOCK_ON_TIMEOUT:
+                    elif now - lock_on_last_seen > LOCK_ON_TIMEOUT and not retrieve:
                         # TIMEOUT EXCEEDED - SWITCH BACK TO DRIVE MODE
                         print(f"OBJECT LOST FOR {LOCK_ON_TIMEOUT} SECONDS - SWITCHING TO DRIVE MODE")
                         servo_controller.switch_mode('drive')
@@ -706,7 +691,9 @@ def process_frames(frame_width, frame_height):
                         reset_tracking()
                     elif now - lock_on_last_seen > LOCK_ON_TIMEOUT/2:
                         # AFTER HALF TIMEOUT - HOLD ARM POSITION
-                        servo_controller.move_arm(0.0, 0.0, 0.01)  # SMALL AREA RATIO TO HOLD POSITION
+                        servo_controller.move_arm(0.0, 0.0)  # SMALL AREA RATIO TO HOLD POSITION
+                if rel_x < 0.02 and rel_y < 0.02 and rel_x != 0 and rel_y != 0:
+                    servo_controller.retrieve = True
         
         # UPDATE GLOBAL VISION DATA
         with _vision_data_lock:
@@ -717,8 +704,8 @@ def process_frames(frame_width, frame_height):
             
         _update_stats()
         
-        # UPDATE SERVO CONTROLLER EVERY ITERATION
-        servo_controller.update()
+        # # UPDATE SERVO CONTROLLER EVERY ITERATION
+        # servo_controller.update()
 
         # DRAW OBJECTS ON FRAME
         if lock_on_object is not None:
@@ -830,7 +817,10 @@ def process_frames(frame_width, frame_height):
                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2)
         
         # DRAW LOCK STATUS
-        if lock_on_object is not None:
+        if servo_controller.retrieve:
+            cv2.putText(frame, 'RETRIEVING', (10, 60),
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+        elif lock_on_object is not None:
             lock_text = "LOCKED ON OBJECT (TEMPLATE TRACKING)"
             cv2.putText(frame, lock_text, (10, 60),
                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)

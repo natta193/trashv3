@@ -3,6 +3,9 @@ from adafruit_servokit import ServoKit
 def startup():
     kit = ServoKit(channels=16)
 
+    for i in range(3):
+        kit.servo[i].angle = 90
+
     # startup
     input("Power disconnected?")
     kit.servo[4].angle = 90 
